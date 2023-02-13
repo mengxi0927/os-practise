@@ -17,6 +17,7 @@ struct MEMORY_BLOCK best_fit_allocate(int request_size, struct MEMORY_BLOCK memo
 
     // loop through memory_map to find the best fit block
     for (i = 0; i < *map_cnt; i++) {
+        printf("start: %d, end: %d, size: %d, pid: %d\n\n", memory_map[i].start_address, memory_map[i].end_address, memory_map[i].segment_size, memory_map[i].process_id);
         if (memory_map[i].process_id == 0 && memory_map[i].segment_size >= request_size) {
             int difference = memory_map[i].segment_size - request_size;
             if (min_difference == -1 || difference < min_difference) {

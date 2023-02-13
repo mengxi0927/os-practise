@@ -44,11 +44,11 @@ struct MEMORY_BLOCK best_fit_allocate(int request_size, struct MEMORY_BLOCK memo
                 memory_map[index].process_id = candidate.process_id;
             }
             // add new block to memory_map
+            (*map_cnt)++;
             memory_map[*map_cnt].start_address = last_address + 1;
             memory_map[*map_cnt].end_address = last_address + candidate.segment_size - request_size;
             memory_map[*map_cnt].segment_size = candidate.segment_size - request_size;
             memory_map[*map_cnt].process_id = 0;
-            (*map_cnt)++;
         }
         return candidate;
     }

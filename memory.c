@@ -14,7 +14,6 @@ struct MEMORY_BLOCK best_fit_allocate(int request_size, struct MEMORY_BLOCK memo
     struct MEMORY_BLOCK candidate = {0, 0, 0, 0}; // candidate block
     int min_difference = -1;
     int i;
-    int index = 0;
 
     // loop through memory_map to find the best fit block
     for (i = 0; i < *map_cnt; i++) {
@@ -22,7 +21,6 @@ struct MEMORY_BLOCK best_fit_allocate(int request_size, struct MEMORY_BLOCK memo
             int difference = memory_map[i].segment_size - request_size;
             if (min_difference == -1 || difference < min_difference) {
                 candidate = memory_map[i];
-                index = i;
                 min_difference = difference;
             }
         }
@@ -34,19 +32,22 @@ struct MEMORY_BLOCK best_fit_allocate(int request_size, struct MEMORY_BLOCK memo
     } else {
         // update candidate block
         candidate.process_id = process_id;
-
-
+        int last_address = candidate.end_address;
+        printf("last address: %d", last_address);
         if (candidate.segment_size > request_size) {
             // split block
-            if (memory_map[index].start_address == candidate.start_address) {
-                memory_map[index].segment_size = request_size;
-                memory_map[index].end_address = candidate.start_address + request_size - 1;
-                memory_map[index].process_id = candidate.process_id;
+            for (i = 0; i < *map_cnt; i++) {
+                if (memory_map[i].start_address == candidate.start_address) {
+                    memory_map[i].segment_size = request_size;
+                    memory_map[i].end_address = candidate.start_address + request_size - 1;
+                    printf("end address: %d", memory_map[i].end_address);
+                    memory_map[i].process_id = candidate.process_id;
+                    break;
+                }
             }
-
             // add new block to memory_map
-            memory_map[*map_cnt].start_address = candidate.start_address + request_size;
-            memory_map[*map_cnt].end_address = candidate.start_address + candidate.segment_size - 1;
+            memory_map[*map_cnt].start_address = candidate.end_address + 1;
+            memory_map[*map_cnt].end_address = candidate.end_address + candidate.segment_size - request_size;
             memory_map[*map_cnt].segment_size = candidate.segment_size - request_size;
             memory_map[*map_cnt].process_id = 0;
             (*map_cnt)++;

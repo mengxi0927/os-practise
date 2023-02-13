@@ -32,24 +32,25 @@ struct MEMORY_BLOCK best_fit_allocate(int request_size, struct MEMORY_BLOCK memo
     } else {
         // update candidate block
         candidate.process_id = process_id;
+        int seg_size = candidate.segment_size;
         int last_address = candidate.end_address;
-        // printf("last address: %d", last_address);
         if (candidate.segment_size > request_size) {
             // split block
             for (i = 0; i < *map_cnt; i++) {
                 if (memory_map[i].start_address == candidate.start_address) {
                     memory_map[i].segment_size = request_size;
                     memory_map[i].end_address = candidate.start_address + request_size - 1;
-                    // printf("end address: %d", memory_map[i].end_address);
                     last_address = memory_map[i].end_address;
                     memory_map[i].process_id = candidate.process_id;
+                    candidate = memory_map[i];
                     break;
                 }
             }
+
             // add new block to memory_map
             memory_map[*map_cnt].start_address = last_address + 1; 
-            memory_map[*map_cnt].end_address = last_address + candidate.segment_size - request_size;
-            memory_map[*map_cnt].segment_size = candidate.segment_size - request_size;
+            memory_map[*map_cnt].end_address = last_address + seg_size - request_size;
+            memory_map[*map_cnt].segment_size = seg_size - request_size;
             memory_map[*map_cnt].process_id = 0;
             (*map_cnt)++;
         }

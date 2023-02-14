@@ -106,8 +106,7 @@ struct MEMORY_BLOCK first_fit_allocate(int request_size, struct MEMORY_BLOCK mem
         (*map_cnt)++;
     }
 
-        return first_block;
-    }
+    return first_block;
 }
 
 

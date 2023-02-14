@@ -15,7 +15,7 @@ struct MEMORY_BLOCK NULLBLOCK = {0, 0, 0, 0};
 // };
 
 struct MEMORY_BLOCK best_fit_allocate(int request_size, struct MEMORY_BLOCK memory_map[], int *map_cnt, int process_id) {
-    struct MEMORY_BLOCK candidate = {0, 0, 0, 0}; // candidate block
+    struct MEMORY_BLOCK best_block = {0, 0, 0, 0}; // best_block block
     int min_difference = -1;
     int i;
     int index = -1;
@@ -26,31 +26,31 @@ struct MEMORY_BLOCK best_fit_allocate(int request_size, struct MEMORY_BLOCK memo
         if (memory_map[i].process_id == 0 && memory_map[i].segment_size >= request_size) {
             int difference = memory_map[i].segment_size - request_size;
             if (min_difference == -1 || difference < min_difference) {
-                candidate = memory_map[i];
+                best_block = memory_map[i];
                 min_difference = difference;
                 index = i;
             }
         }
     }
 
-    // printf("candidate: start: %d, end: %d, size: %d, pid: %d\n\n", candidate.start_address, candidate.end_address, candidate.segment_size, candidate.process_id);
+    // printf("best_block: start: %d, end: %d, size: %d, pid: %d\n\n", best_block.start_address, best_block.end_address, best_block.segment_size, best_block.process_id);
 
     if (min_difference == -1) {
         // no free block found
         return NULLBLOCK;
     } else {
-        // update candidate block
-        candidate.process_id = process_id;
-        int seg_size = candidate.segment_size;
+        // update best_block block
+        best_block.process_id = process_id;
+        int seg_size = best_block.segment_size;
         int last_address = 0;
         int left_size = seg_size - request_size;
 
         // split block
-        memory_map[index].start_address = candidate.start_address;
-        memory_map[index].end_address = candidate.start_address + request_size - 1;
+        memory_map[index].start_address = best_block.start_address;
+        memory_map[index].end_address = best_block.start_address + request_size - 1;
         memory_map[index].segment_size = request_size;
         memory_map[index].process_id = process_id;
-        candidate = memory_map[index];
+        best_block = memory_map[index];
         last_address = memory_map[index].end_address;
 
         // add new block to memory_map
@@ -62,7 +62,7 @@ struct MEMORY_BLOCK best_fit_allocate(int request_size, struct MEMORY_BLOCK memo
             (*map_cnt)++;
         }
 
-        return candidate;
+        return best_block;
     }
 }
 
@@ -111,44 +111,50 @@ struct MEMORY_BLOCK first_fit_allocate(int request_size, struct MEMORY_BLOCK mem
 
 
 struct MEMORY_BLOCK worst_fit_allocate(int request_size, struct MEMORY_BLOCK memory_map[MAPMAX], int *map_cnt, int process_id) {
-    int i, max_i = -1;
-    int max_size = -1;
+    struct MEMORY_BLOCK worst_block = {0, 0, 0, 0}; // worst_block block
+    int max_diff = -1;
+    int i;
+    int index = -1;
 
-    // Find the largest free block
+    // loop through memory_map to find the best fit block 
     for (i = 0; i < *map_cnt; i++) {
         if (memory_map[i].process_id == 0 && memory_map[i].segment_size >= request_size) {
-            if (memory_map[i].segment_size > max_size) {
-                max_size = memory_map[i].segment_size;
-                max_i = i;
+            int diff = memory_map[i].segment_size - request_size;
+            if (max_diff == -1 || diff > max_diff) {
+                worst_block = memory_map[i];
+                max_diff = diff;
+                index = i;
             }
         }
     }
 
-    // If a large enough block was found
-    if (max_i != -1) {
-        // If the block is exactly the same size as the requested size
-        if (memory_map[max_i].segment_size == request_size) {
-            memory_map[max_i].process_id = process_id;
-            return memory_map[max_i];
-        }
-        // If the block is larger than the requested size
-        else {
-            struct MEMORY_BLOCK new_block;
-            new_block.start_address = memory_map[max_i].start_address;
-            new_block.end_address = memory_map[max_i].start_address + request_size - 1;
-            new_block.segment_size = request_size;
-            new_block.process_id = process_id;
+    if (max_diff == -1) {
+        return NULLBLOCK;
+    } else {
+        // update worst_block block
+        worst_block.process_id = process_id;
+        int seg_size = worst_block.segment_size;
+        int last_address = 0;
+        int left_size = seg_size - request_size;
 
-            memory_map[max_i].start_address = new_block.end_address + 1;
-            memory_map[max_i].segment_size -= request_size;
+        // split block
+        memory_map[index].start_address = worst_block.start_address;
+        memory_map[index].end_address = worst_block.start_address + request_size - 1;
+        memory_map[index].segment_size = request_size;
+        memory_map[index].process_id = process_id;
+        worst_block = memory_map[index];
+        last_address = memory_map[index].end_address;
 
-            return new_block;
+        // add new block to memory_map
+        if (left_size > 0) {
+            memory_map[*map_cnt].start_address = last_address + 1;
+            memory_map[*map_cnt].end_address = last_address + left_size;
+            memory_map[*map_cnt].segment_size = left_size;
+            memory_map[*map_cnt].process_id = 0;
+            (*map_cnt)++;
         }
-    }
-    // If no large enough block was found
-    else {
-        struct MEMORY_BLOCK null_block = {0, 0, 0, 0};
-        return null_block;
+
+        return worst_block;
     }
 }
 

@@ -89,24 +89,22 @@ struct MEMORY_BLOCK first_fit_allocate(int request_size, struct MEMORY_BLOCK mem
     // If no suitable block was found, return the NULLBLOCK
     if (first_block.start_address == 0 && first_block.end_address == 0) {
         return NULLBLOCK;
-    }
+    }                                          // split the memory block
 
-    if (first_block.segment_size == request_size) {     // percectly fit the memory block
-        first_block.process_id = process_id;
-        return first_block;
-    } else {                                            // split the memory block
-        left_size = first_block.segment_size - request_size;
-        memory_map[index].start_address = start_address;
-        memory_map[index].end_address = end_address;
-        memory_map[index].segment_size = request_size;
-        memory_map[index].process_id = process_id;
-        first_block = memory_map[index];
-        
+    left_size = first_block.segment_size - request_size;
+    memory_map[index].start_address = start_address;
+    memory_map[index].end_address = end_address;
+    memory_map[index].segment_size = request_size;
+    memory_map[index].process_id = process_id;
+    first_block = memory_map[index];
+    
+    if (left_size > 0) {
         memory_map[*map_cnt].start_address = first_block.end_address + 1;
         memory_map[*map_cnt].end_address = first_block.end_address + left_size;
         memory_map[*map_cnt].segment_size = left_size;
         memory_map[*map_cnt].process_id = 0;
         (*map_cnt)++;
+    }
 
         return first_block;
     }

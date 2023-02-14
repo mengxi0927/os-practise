@@ -213,11 +213,15 @@ void release_memory(struct MEMORY_BLOCK freed_block, struct MEMORY_BLOCK memory_
     int index = -1;
     int start_address = freed_block.start_address;
     int end_address = freed_block.end_address;
+    int start = 0;
+    int end = 0;
 
     // find the index of the freed block
     for (i = 0; i < *map_cnt; i++) {
         if (memory_map[i].start_address == start_address && memory_map[i].end_address == end_address) {
             index = i;
+            start = memory_map[i].start_address;
+            end = memory_map[i].end_address;
             break;
         }
     }
@@ -234,16 +238,22 @@ void release_memory(struct MEMORY_BLOCK freed_block, struct MEMORY_BLOCK memory_
     // merge the freed block with the previous block
     if (index > 0 && memory_map[index - 1].process_id == 0) {
         memory_map[index - 1].end_address = memory_map[index].end_address;
+        printf("Merging block %d-%d with block %d-%d \n", memory_map[index - 1].start_address, memory_map[index - 1].end_address, memory_map[index].start_address, memory_map[index].end_address);
         memory_map[index - 1].segment_size = memory_map[index - 1].segment_size + memory_map[index].segment_size;
+        printf("The new block is %d-%d \n", memory_map[index - 1].start_address, memory_map[index - 1].end_address);
         memory_map[index] = memory_map[index - 1];
+        printf("The block %d-%d is removed from the memory map. \n", memory_map[index].start_address, memory_map[index].end_address);
         index--;
     }
 
     // merge the freed block with the next block
     if (index < *map_cnt - 1 && memory_map[index + 1].process_id == 0) {
         memory_map[index].end_address = memory_map[index + 1].end_address;
+        printf("Merging block %d-%d with block %d-%d \n", memory_map[index].start_address, memory_map[index].end_address, memory_map[index + 1].start_address, memory_map[index + 1].end_address);
         memory_map[index].segment_size = memory_map[index].segment_size + memory_map[index + 1].segment_size;
+        printf("The new block is %d-%d \n", memory_map[index].start_address, memory_map[index].end_address);
         memory_map[index + 1] = memory_map[index];
+        printf("The block %d-%d is removed from the memory map. \n", memory_map[index + 1].start_address, memory_map[index + 1].end_address);
     }
 
     // remove the merged block

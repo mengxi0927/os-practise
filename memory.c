@@ -236,7 +236,7 @@ void release_memory(struct MEMORY_BLOCK freed_block, struct MEMORY_BLOCK memory_
     }
 
     // update the freed block
-    memory_map[index].process_id = -1;
+    memory_map[index].process_id = 0;
 
     // merge the freed block with the previous block
     if (index > 0 && memory_map[index - 1].process_id == 0) {

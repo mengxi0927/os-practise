@@ -207,8 +207,6 @@ struct MEMORY_BLOCK next_fit_allocate(int request_size, struct MEMORY_BLOCK memo
 
 
 void release_memory(struct MEMORY_BLOCK freed_block, struct MEMORY_BLOCK memory_map[MAPMAX], int *map_cnt) {
-    printf("Releasing memory block %d-%d, \n", freed_block.start_address, freed_block.end_address);
-
     int i;
     int index = -1;
     int start_address = freed_block.start_address;
@@ -249,11 +247,8 @@ void release_memory(struct MEMORY_BLOCK freed_block, struct MEMORY_BLOCK memory_
     // merge the freed block with the next block
     if (index < *map_cnt - 1 && memory_map[index + 1].process_id == 0) {
         memory_map[index].end_address = memory_map[index + 1].end_address;
-        printf("Merging block %d-%d with block %d-%d \n", memory_map[index].start_address, memory_map[index].end_address, memory_map[index + 1].start_address, memory_map[index + 1].end_address);
         memory_map[index].segment_size = memory_map[index].segment_size + memory_map[index + 1].segment_size;
-        printf("The new block is %d-%d \n", memory_map[index].start_address, memory_map[index].end_address);
         memory_map[index + 1] = memory_map[index];
-        printf("The block %d-%d is removed from the memory map. \n", memory_map[index + 1].start_address, memory_map[index + 1].end_address);
     }
 
     // remove the merged block

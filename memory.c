@@ -73,6 +73,7 @@ struct MEMORY_BLOCK first_fit_allocate(int request_size, struct MEMORY_BLOCK mem
     int left_size = 0;
     int start_address = 0;
     int end_address = 0;
+    int index = -1;
 
     // Loop through the memory map
     for (i = 0; i < *map_cnt; i++) {
@@ -80,6 +81,7 @@ struct MEMORY_BLOCK first_fit_allocate(int request_size, struct MEMORY_BLOCK mem
             first_block = memory_map[i];
             start_address = first_block.start_address;
             end_address = start_address + request_size - 1;
+            index = i;
             break;
         }
     }
@@ -94,11 +96,12 @@ struct MEMORY_BLOCK first_fit_allocate(int request_size, struct MEMORY_BLOCK mem
         return first_block;
     } else {                                            // split the memory block
         left_size = first_block.segment_size - request_size;
-        first_block.start_address = start_address;
-        first_block.end_address = start_address + request_size - 1;
-        first_block.segment_size = request_size;
-        first_block.process_id = process_id;
-
+        memory_map[index].start_address = start_address;
+        memory_map[index].end_address = end_address;
+        memory_map[index].segment_size = request_size;
+        memory_map[index].process_id = process_id;
+        first_block = memory_map[index];
+        
         memory_map[*map_cnt].start_address = first_block.end_address + 1;
         memory_map[*map_cnt].end_address = first_block.end_address + left_size;
         memory_map[*map_cnt].segment_size = left_size;

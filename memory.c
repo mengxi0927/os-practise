@@ -207,7 +207,8 @@ struct MEMORY_BLOCK next_fit_allocate(int request_size, struct MEMORY_BLOCK memo
 
 
 void release_memory(struct MEMORY_BLOCK freed_block, struct MEMORY_BLOCK memory_map[MAPMAX], int *map_cnt) {
-    
+    printf("Releasing memory block %d-%d, \n", freed_block.start_address, freed_block.end_address);
+
     int i;
     int index = -1;
     int start_address = freed_block.start_address;
@@ -223,11 +224,12 @@ void release_memory(struct MEMORY_BLOCK freed_block, struct MEMORY_BLOCK memory_
 
     // if the freed block is not found, return
     if (index == -1) {
+        printf("The block to be released is not found in the memory map. \n");
         return;
     }
 
     // update the freed block
-    memory_map[index].process_id = 0;
+    memory_map[index].process_id = -1;
 
     // merge the freed block with the previous block
     if (index > 0 && memory_map[index - 1].process_id == 0) {

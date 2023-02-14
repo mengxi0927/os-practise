@@ -160,88 +160,95 @@ struct MEMORY_BLOCK worst_fit_allocate(int request_size, struct MEMORY_BLOCK mem
 
 
 struct MEMORY_BLOCK next_fit_allocate(int request_size, struct MEMORY_BLOCK memory_map[MAPMAX], int *map_cnt, int process_id, int last_address) {
-    struct MEMORY_BLOCK result = NULLBLOCK;
-    int start_searching = 0;
     int i;
+    struct MEMORY_BLOCK next_block = NULLBLOCK;
+    int left_size = 0;
+    int start_address = 0;
+    int end_address = 0;
+    int index = -1;
 
+    // Loop through the memory map
     for (i = 0; i < *map_cnt; i++) {
+        if (memory_map[i].start_address < last_address) {
+            continue;
+        }
+
         if (memory_map[i].process_id == 0 && memory_map[i].segment_size >= request_size) {
-            if (memory_map[i].start_address >= last_address) {
-                result = memory_map[i];
-                break;
-            } else if (!start_searching) {
-                start_searching = 1;
-                result = memory_map[i];
-            }
+            next_block = memory_map[i];
+            start_address = next_block.start_address;
+            end_address = start_address + request_size - 1;
+            index = i;
+            break;
         }
     }
 
-    if (result.segment_size == 0) {
+    // If no suitable block was found, return the NULLBLOCK
+    if (next_block.start_address == 0 && next_block.end_address == 0) {
         return NULLBLOCK;
-    }
+    }                                          // split the memory block
 
-    if (result.segment_size > request_size) {
-        int new_start = result.start_address + request_size;
-        int new_end = result.end_address;
-        int new_size = result.segment_size - request_size;
-
-        result.segment_size = request_size;
-        result.end_address = result.start_address + request_size - 1;
-        result.process_id = process_id;
-
-        memory_map[*map_cnt].start_address = new_start;
-        memory_map[*map_cnt].end_address = new_end;
-        memory_map[*map_cnt].segment_size = new_size;
+    left_size = next_block.segment_size - request_size;
+    memory_map[index].start_address = start_address;
+    memory_map[index].end_address = end_address;
+    memory_map[index].segment_size = request_size;
+    memory_map[index].process_id = process_id;
+    next_block = memory_map[index];
+    
+    if (left_size > 0) {
+        memory_map[*map_cnt].start_address = next_block.end_address + 1;
+        memory_map[*map_cnt].end_address = next_block.end_address + left_size;
+        memory_map[*map_cnt].segment_size = left_size;
         memory_map[*map_cnt].process_id = 0;
         (*map_cnt)++;
-    } else {
-        result.process_id = process_id;
     }
 
-    return result;
+    return next_block;
 }
 
 
 void release_memory(struct MEMORY_BLOCK freed_block, struct MEMORY_BLOCK memory_map[MAPMAX], int *map_cnt) {
-    // Mark the block as free by updating its process id to -1
-    freed_block.process_id = -1;
-
-    // Merge the freed block with any adjacent free blocks if they exist
+    
     int i;
+    int index = -1;
+    int start_address = freed_block.start_address;
+    int end_address = freed_block.end_address;
+
+    // find the index of the freed block
     for (i = 0; i < *map_cnt; i++) {
-        // Check if the freed block is adjacent to a free block
-        if (memory_map[i].end_address + 1 == freed_block.start_address) {
-            // Update the end address and size of the previous free block
-            memory_map[i].end_address = freed_block.end_address;
-            memory_map[i].segment_size = memory_map[i].end_address - memory_map[i].start_address + 1;   //11111
-
-            // Remove the freed block from the memory map
-            int j;
-            for (j = i + 1; j < *map_cnt - 1; j++) {
-                memory_map[j] = memory_map[j + 1];
-            }
-            *map_cnt -= 1;
-            break;
-        }
-        else if (freed_block.end_address + 1 == memory_map[i].start_address) {
-            // Update the start address and size of the next free block
-            memory_map[i].start_address = freed_block.start_address;        //1111111
-            memory_map[i].segment_size = memory_map[i].end_address - memory_map[i].start_address + 1;
-
-            // Remove the freed block from the memory map
-            int j;
-            for (j = i + 1; j < *map_cnt - 1; j++) {
-                memory_map[j] = memory_map[j + 1];
-            }
-            *map_cnt -= 1;
+        if (memory_map[i].start_address == start_address && memory_map[i].end_address == end_address) {
+            index = i;
             break;
         }
     }
 
-    // If the freed block was not merged with any adjacent blocks, add it to the memory map
-    if (i == *map_cnt) {
-        memory_map[*map_cnt] = freed_block;
-        *map_cnt += 1;
+    // if the freed block is not found, return
+    if (index == -1) {
+        return;
     }
+
+    // update the freed block
+    memory_map[index].process_id = 0;
+
+    // merge the freed block with the previous block
+    if (index > 0 && memory_map[index - 1].process_id == 0) {
+        memory_map[index - 1].end_address = memory_map[index].end_address;
+        memory_map[index - 1].segment_size = memory_map[index - 1].segment_size + memory_map[index].segment_size;
+        memory_map[index] = memory_map[index - 1];
+        index--;
+    }
+
+    // merge the freed block with the next block
+    if (index < *map_cnt - 1 && memory_map[index + 1].process_id == 0) {
+        memory_map[index].end_address = memory_map[index + 1].end_address;
+        memory_map[index].segment_size = memory_map[index].segment_size + memory_map[index + 1].segment_size;
+        memory_map[index + 1] = memory_map[index];
+    }
+
+    // remove the merged block
+    for (i = index + 1; i < *map_cnt; i++) {
+        memory_map[i - 1] = memory_map[i];
+    }
+
+    (*map_cnt)--;
 }
 
